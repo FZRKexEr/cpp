@@ -468,6 +468,38 @@ int main() {
 
 静态成员变量只能在类外初始化。因为构造函数在运行时才会执行，而静态变量需要在编译时就分配地址。
 
+静态成员函数可以用类名直接访问，不需要对象 (也可以用对象)。
+
+静态成员函数。可以返回静态成员变量，可以用类名调用，不需要对象。
+
+```cpp
+class Test {
+public:
+    static int GetINF() {
+        return INF;
+    }
+    int func() {
+        return 1;
+    }
+    static int func2() {
+        return 1;
+    }
+    int value = 100;
+private:
+    static const int INF;
+};
+
+const int Test::INF = 1000000000;
+
+int main() {
+    std::cout << Test::GetINF() << std::endl; // ok
+    std::cout << Test::value << std::endl; // 对非静态成员变量的错误用法
+    std::cout << Test::func() << std::endl; // 没有对象不能调用
+    std::cout << Test::func2() << std::endl; // ok
+    return 0;
+}
+```
+
 ## 8. 多线程
 
 并发: 每个cpu执行一个线程，不抢占资源。
