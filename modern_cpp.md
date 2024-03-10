@@ -112,7 +112,7 @@ auto& i3 = refi; // 等价于 auto& i3 = i;
 
 4. auto 有 & 时，所有 const 都会得到保留
 
-## 1.6 静态变量 指针 引用
+### 1.6 静态变量 指针 引用
 
 变量的存储位置：静态变量，栈区，堆区。
 
@@ -135,7 +135,7 @@ int main() {
 }
 ```
 
-## 1.7 左值 右值 左值引用 右值引用 
+### 1.7 左值 右值 左值引用 右值引用 
 
 左值：有地址属性的对象, 可以放在等号左边(也可以放在右边)
 
@@ -152,8 +152,172 @@ b = a++; // a++ 是右值
 ```
 1. 普通左值引用,eg `int &i` 就是i的别名, 无法绑定常量对象, 只能绑定左值。
 2. const 左值引用可以绑定左值和右值, 对常量对象起别名。
-3. 
+3. 右值引用 `int &&c = a + 1;`
 
+### 1.8 move 函数
+
+`int&& rrefi = std::move(i);`
+
+把 i 从左值变成右值，失去地址属性，不能再被使用。
+
+所有临时对象都是右值。
+
+### 1.9 可调用对象
+
+如果一个对象使用调用运算符`()`, 并且里面可以放参数，这个对象就是可调用对象。
+
+可调用对象最重要的用法是给另一个函数作为参数。
+
+可调用对象分类：
+
+1. 函数
+    ```cpp
+    #include <iostream>
+
+    int test(int i) {
+        std::cout << i << std::endl;
+        return i;
+    }
+
+    using pf_type = int(*)(int);
+
+    void my_func(pf_type pf, int i) {
+        pf(i);
+    }
+    void my_func2(int(*pf)(int), int i) {
+        pf(i);
+    }
+
+    int main() {
+        my_func(test, 100);
+        my_func2(test, 100);
+        return 0;
+    }
+
+    ```
+2. 仿函数 functor
+    ```cpp
+    class Test {
+    public:
+        void operator()(int i) {
+            std::cout << i << std::endl;
+            std::cout << "operator()(int i)" << std::endl;
+        }
+    };
+
+    int main() {
+        Test t;
+        t(100);
+        return 0;
+    }
+    ```
+3. lambda表达式
+
+    格式：最少 `[]{}`, 完整格式 `[]()->ret{}` 
+
+    ```cpp
+    int main() {
+        []{
+            std::cout << "hello" << std::endl;
+        }(); // 后面这个括号不是定义中的 (), 而是表示调用这个匿名函数
+        return 0;
+    }
+    ```
+    
+    1. `[]` 捕获列表
+       - `[]` 不捕获
+       - `[=]` 按值捕获
+       - `[&]` 按引用捕获
+       - `[&, i]` i按值捕获, 其他变量按引用捕获
+       - `[=, &i]` i按引用捕获，其他变量按值捕获
+       - `[i]` 单独捕获 i 的值
+       - `[&i]` 单独捕获 i 的引用   
+    2. `()` 表达式的参数
+
+        ```cpp
+        int main() {
+            [](int num){
+                std::cout << num << std::endl;
+            }(100); // 输出 100
+            return 0;
+        }
+        ```
+    lambda表达式最常用的用法是给普通函数做参数.  
+
+    ```cpp
+    void my_fun(int(*pf)(int), int num) {
+        pf(num);
+    }
+
+    int main() {
+        my_fun([](int num)->int {
+            std::cout << num << std::endl;
+            return num;
+        }, 100);
+        return 0;
+    }
+    ```
+    注意，如果lambda表达式传递给函数指针，不能有任何捕获, 这是函数指针的固有缺陷。使用C++11 的 function 可以解决这个问题。 
+    ```cpp
+    #include <iostream>
+    #include <functional>
+
+    using func_type = std::function<int(int)>; // C++11, 和函数指针唯一的区别是这个可以捕获
+
+    void my_fun(func_type func, int num) {
+        func(num);
+    }
+
+    int main() {
+        int a = 101;
+        my_fun([a](int num)->int {
+            std::cout << num << std::endl;
+            std::cout << a << std::endl;
+            std::cout << "lambda" << std::endl;
+            return num;
+        }, 100);
+        return 0;
+    }
+    ```
+
+## 2 类
+### 2.1 构造函数，析构函数
+
+面向对象：按人类思维编码, 类有自己的函数，不需要类外的函数来操作类。
+
+面向过程：按机器运行编码, C语言 struct 不能有函数，C++ class, struct 可以。面向过程编程有从天而降的函数，来完成各种事情。比如在结构体外定义函数操作结构体。c语言开发的大型项目，也模拟了面向对象的过程。
+
+构造函数类型：
+
+1. 普通构造函数 
+2. 复制构造函数, 用另一个对象来初始化对应的内存
+    ```cpp
+    class Test {
+    public:
+        Test(const Test& other) : a(other.a), b(other.b) {}
+        int a;
+        int b;
+    };
+    ```
+3. 移动构造函数
+4. 默认构造函数 `Test() {}`
+
+析构函数，类删除的时候调用析构函数，一般什么都不需要干 `~Test() {}`
+
+```cpp
+class Test {
+public:
+    Test(int a_, int b_) : a(a_), b(b_), p(new int(8)) {}
+    ~Test() { // 析构函数, 释放指针, 避免内存泄露
+        delete p;
+    }
+    int a;
+    int b;
+    int* p;
+};
+```
+
+几乎所有类都需要构造函数，析构函数未必要
 
 ## 8. 多线程
 
