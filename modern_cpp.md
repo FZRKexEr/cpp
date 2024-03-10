@@ -319,6 +319,155 @@ public:
 
 几乎所有类都需要构造函数，析构函数未必要
 
+### 2.2 this 关键字，常成员函数，常对象
+
+const指针:
+```cpp
+const int* p; // 指向的类型是 const int, 指针可以随意修改指向的对象
+int const * p; // 指向的类型是 const int, 指针可以随意修改指向的对象
+int * const p; // 指向的类型是 int, 指针不能随意修改指向的对象
+const int* const p; // 指向const int, 且指针不能修改
+``` 
+
+常成员函数：不能修改成员变量，可以理解为把this指针指向对象用const修饰的函数。
+
+```cpp
+void output() const { // const 表示不希望 output() 函数修改类成员变量
+    //...
+}
+```
+
+注意：
+1. 常成员函数不能调用普通函数
+2. 常对象不能调用普通函数
+3. 能加const就加!!! 少出很多bug
+4. 常对象 优先调用常成员函数，普通对象优先调用普通成员函数，同名常成员函数和普通成员函数可以重载。(没啥用, 一般不写两个)
+
+### 2.3 inline, mutable, default, delete 关键字
+
+inline 建议编译器将函数放在需要调用的地方，不进行压栈操作，提高效率。在类中直接实现函数，默认会加inline关键字。
+
+mutable 关键字让变量永远可以被修改，即使处于常函数中。mutable 是一种万不得已的写法。
+
+default 关键字，使用系统默认的函数。推荐写出来更直观。
+
+```cpp
+class Test {
+public:
+    Test() = default;
+    Test(const Test& test) = default;
+    ~Test() = default;
+    Test& operator = (const Test& test) = default;
+private:
+    int a;
+};
+```
+
+delete 关键字:
+
+```cpp
+class Test {
+public:
+    Test() = delete; // 指定系统不默认生成普通构造函数
+    Test(const Test& test) = delete; // 不默认生成复制构造函数
+    Test& operator = (const Test& test) = delete; 
+    ~Test() = delete; // 析构函数一般不会这样做, 但是可以。
+private:
+    int a;
+};
+```
+### 2.4 friend 关键字
+
+friend 让类或者函数能访问私有成员。会破坏封装性，尽量不要用，只在必须使用友元的算符重载时使用。
+
+### 2.5 重载运算符
+
+to do 
+
+
+### 2.6 继承
+
+```cpp
+class Spear {
+public:
+    Spear(std::string a, std::string b) : name(a), icon(b) {}
+protected: // 外界无法访问，public 继承后可以访问
+    std::string name;
+    std::string icon;
+};
+
+class IceSpear : public Spear { // 只有 public 继承 有用
+public:
+    IceSpear(std::string a, std::string b, std::string c) : Spear(a, b), ice(c) {}
+    void Output() {
+        std::cout << name << std::endl;
+    }
+private:
+    std::string ice;
+};
+```
+
+```cpp
+Spear* pSpear = new IceSpear(); // 也是可以的，因为子类先调用父类的构造函数。父类构造完毕已经匹配了。
+```
+
+父类的构造函数和析构函数都在子类之前运行。
+
+### 2.7 虚函数
+
+父类的函数指针可以指向子类对象。
+
+多态：父类的函数指针可以调用子类的成员函数。例如，对于开火这个动作，只需要写让父类开火，就会自动调用子类的开火动作。
+
+虚函数: 加上 virtual 关键字的函数, 会优先调用子类的同名函数
+
+注意：子类虚函数定义需要和父类完全一样, 否则子类虚函数会被当成新的成员函数，没有报错信息。
+
+C++ 11 override 能强制让子类父类虚函数必须保持一致，如果不一致会编译失败。
+
+```cpp
+class Spear {
+public:
+    Spear(std::string a, std::string b) : name(a), icon(b) {}
+    virtual void OpenFire() { // 使用 virtual 关键字会优先调用子类的 OpenFire
+        std::cout << "Spear::OpenFire()" << std::endl;
+    }
+protected: // 外界无法访问，public 继承后可以访问
+    std::string name;
+    std::string icon;
+};
+
+class IceSpear : public Spear { // 只有 public 继承 有用
+public:
+    IceSpear(std::string a, std::string b, std::string c) : Spear(a, b), ice(c) {}
+    void Output() {
+        std::cout << name << std::endl;
+    }
+    virtual void OpenFire() override { // 如果父类 OpenFire 已经加上 virtual 了，子类会自动加上，但这里还是写上 virtual
+        std::cout << "IceSpear::OpenFire()" << std::endl;
+    }
+private:
+    std::string ice;
+};
+
+int main() {
+    Spear* pSpear = new IceSpear("a", "b", "c");
+    pSpear -> OpenFire();
+    delete pSpear; // 有 new 一定要delete !
+    return 0;
+}
+```
+
+析构函数必须是虚函数，避免内存泄漏。
+
+静态绑定：编译时，就知道函数的地址。非虚函数就是静态绑定。
+
+动态绑定：程序运行时才知道函数的地址,编译时只知道找到函数地址的方法。虚函数是动态绑定。
+
+### 2.8 静态成员变量 静态成员函数
+
+静态成员变量只能在类外初始化。因为构造函数在运行时才会执行，而静态变量需要在编译时就分配地址。
+
 ## 8. 多线程
 
 并发: 每个cpu执行一个线程，不抢占资源。
