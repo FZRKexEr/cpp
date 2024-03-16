@@ -499,6 +499,110 @@ int main() {
     return 0;
 }
 ```
+### 2.9 纯虚函数
+
+基类的纯虚函数可以被忽略掉，有纯虚函数的基类不生成对象。
+
+```cpp
+class Spear {
+public:
+    Spear(std::string a, std::string b) : name(a), icon(b) {}
+    virtual void OpenFire() const = 0; // 纯虚函数 不需要实现 , 纯虚函数： = 0
+protected: // 外界无法访问，public 继承后可以访问
+    std::string name;
+    std::string icon;
+};
+
+class IceSpear : public Spear { // 只有 public 继承 有用
+public:
+    IceSpear(std::string a, std::string b, std::string c) : Spear(a, b), ice(c) {}
+    void Output() {
+        std::cout << name << std::endl;
+    }
+    virtual void OpenFire() const override { // virtual 可以只在父类定义，override 只在子类定义
+        std::cout << "IceSpear::OpenFire()" << std::endl;
+    }
+private:
+    std::string ice;
+};
+
+int main() {
+    Spear* pSpear = new IceSpear("a", "b", "c"); // 注意不能 new Spear, 因为 Spear 是有纯虚函数的基类
+    pSpear -> OpenFire();
+    delete pSpear; // 有 new 一定要delete !
+    return 0;
+}
+```
+### 2.10 RTTI (Run Time Type Identification)
+
+检查基类指针指向的实际的派生类
+
+RTTI 是C++判断指针或者引用实际类型的唯一方式。
+
+typeid用法, 使用 typeid 父类和子类必须要有虚函数(父类有了，子类自动会有)
+
+```cpp
+int main() {
+    Spear* pSpear = new IceSpear("a", "b", "c");
+    pSpear -> OpenFire();
+
+    std::cout << typeid(*pSpear).name() << std::endl; // typeid(*Pointer).name() 返回指针对象的真实名称，这里是 IceSpear
+
+    delete pSpear; // 有 new 一定要delete !
+    return 0;
+}
+```
+
+dynamic_cast 用法, 把基类指针转换成子类指针
+
+```cpp
+int main() {
+    Spear* pSpear = new IceSpear("a", "b", "c");
+    pSpear -> OpenFire();
+
+    std::cout << typeid(*pSpear).name() << std::endl; // typeid(*Pointer).name() 返回指针对象的真实名称，这里是 IceSpear
+
+    IceSpear* pIceSpear = dynamic_cast<IceSpear*>(pSpear);  // 把基类指针转换成子类指针
+    pIceSpear -> IamIceSpear();
+    std::cout << pIceSpear << " " << pSpear; // 这两个指针地址相同, 只delete 一次
+    delete pSpear; // 有 new 一定要delete !
+    return 0;
+}
+```
+
+重要用法，判断类型
+
+```cpp
+int main() {
+    Spear* pSpear = new IceSpear("a", "b", "c");
+
+    std::cout << typeid(*pSpear).name() << std::endl; // typeid(*Pointer).name() 返回指针对象的真实名称，这里是 IceSpear
+    std::cout << typeid(IceSpear).name() << std::endl;
+
+    if (typeid(*pSpear) == typeid(IceSpear)) {
+        IceSpear* pIceSpear = dynamic_cast<IceSpear*>(pSpear);
+        if (pIceSpear) { // 不是 none 就转换成功
+            std::cout << "cast IceSpear success" << std::endl;
+        }
+    }
+
+    delete pSpear; // 有 new 一定要delete !
+    return 0;
+}
+```
+### 2.11 多继承
+
+
+子类继承多个基类
+
+除了借口模式，不建议使用。
+
+### 2.12 虚继承
+
+### 2.13 移动构造函数 移动复制运算符
+
+
+
 
 ## 8. 多线程
 
